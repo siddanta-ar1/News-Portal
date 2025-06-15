@@ -58,8 +58,31 @@ export default function FavoritesPage() {
     getUserAndNews();
   }, []);
 
-  if (loading) return <p>Loading your saved news...</p>;
-  if (!userId) return <p>Please log in to view your saved news.</p>;
+ if (loading) {
+  return (
+    <div className="flex items-center justify-center py-10">
+      <p className="text-lg font-medium text-black dark:text-black animate-pulse">
+        ⏳ Loading your saved news...
+      </p>
+    </div>
+  );
+}
+
+if (!userId) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 space-y-4 text-center">
+      <p className="text-lg font-semibold text-black dark:text-black">
+        🔒 Please log in to view your saved news.
+      </p>
+      <button
+        onClick={() => supabase.auth.signInWithOAuth({ provider: 'google' })}
+        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow transition-colors"
+      >
+        Login with Google
+      </button>
+    </div>
+  );
+}
 
   return (
     <section className="bg-white dark:bg-gray-900 shadow-md rounded-xl p-6 mb-6 space-y-6">
