@@ -8,6 +8,7 @@ interface NewsArticle {
   link: string;
   pubDate: string;
   source_id: string;
+  sourc?: 'api' | 'user';
 }
 
 export default function NewsSearch() {
@@ -16,29 +17,59 @@ export default function NewsSearch() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function fetchNews(countryCode: string) {
-    setLoading(true);
-    setError(null);
+async function fetchNews(countryCode: string) {
+  setLoading(true);
+  setError(null);
 
-    try {
-      const res = await fetch(
-        `https://newsdata.io/api/1/latest?apikey=pub_b5c84fc50e2e44fda7fb187b40740cd9&q=world news&country=${countryCode}`
-      );
-      const data = await res.json();
+  try {
+    // ✅ Fetch from external API
+    const res = await fetch(
+      `https://newsdata.io/api/1/latest?apikey=pub_b5c84fc50e2e44fda7fb187b40740cd9&q=world news&country=${countryCode}`
+    );
+    const data = await res.json();
 
-      if (!data.results) {
-        setError('No news found for this country.');
-        setNews([]);
-      } else {
-        setNews(data.results);
-      }
-    } catch (err) {
-      setError('Failed to fetch news.'+ err);
-      setNews([]);
+    type ApiResultItem = {
+      title: string;
+      link: string;
+      pubDate: string;
+      source_id: string;
+      // add other fields from the API response if needed
+    };
+
+    const apiResults: NewsArticle[] = data.results?.map((item: ApiResultItem) => ({
+      ...item,
+      source: 'api',
+    })) || [];
+
+    // ✅ Fetch from Supabase user_news table
+    const { data: dbNews } = await supabase
+      .from('user_news')
+      .select('*')
+      .eq('country_code', countryCode)
+      .order('created_at', { ascending: false });
+
+    const userNews: NewsArticle[] = dbNews?.map((item) => ({
+      title: item.title,
+      link: item.link || '#',
+      pubDate: item.created_at,
+      source_id: item.author_email || 'User Submission',
+      source: 'user',
+    })) || [];
+
+    // ✅ Combine both
+    setNews([...userNews, ...apiResults]);
+
+    if (!apiResults.length && !userNews.length) {
+      setError('No news found for this country.');
     }
-
-    setLoading(false);
+  } catch (err) {
+    setError('Failed to fetch news: ' + err);
+    setNews([]);
   }
+
+  setLoading(false);
+}
+
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

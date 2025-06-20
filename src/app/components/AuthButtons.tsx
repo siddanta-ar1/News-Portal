@@ -21,11 +21,11 @@ export default function AuthButtons() {
     };
   }, []);
 
-  async function handleLogin() {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-    });
-  }
+async function handleLogin() {
+  await supabase.auth.signInWithOAuth({
+    provider: 'google',
+  });
+}
 
   async function handleLogout() {
     await supabase.auth.signOut();

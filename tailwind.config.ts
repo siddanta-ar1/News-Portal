@@ -6,7 +6,7 @@ const config =  {
     './pages/**/*.{ts,tsx}',    // Fallback (if used)
     './components/**/*.{ts,tsx}',
   ],
-  darkMode: 'class', // 👈 enable class-based dark mode
+ 
   theme: {
     extend: {},
   },
