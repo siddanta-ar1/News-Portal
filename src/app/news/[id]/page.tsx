@@ -1,14 +1,15 @@
-// app/news/[id]/page.tsx
 import { notFound } from 'next/navigation';
 
-export default async function NewsDetailPage({ params }: { params: { id: number } }) {
-  const idStr = params.id.toString();
-  const res = await fetch(`https://api.example.com/news/${idStr}`);
-  const data = await res.json();
+type Params = Promise<{ id: string }>;
 
-  if (!data) {
-    notFound(); // redirects to /not-found
-  }
+export default async function NewsDetailPage({ params }: { params: Params }) {
+  const { id } = await params;
+
+  const res = await fetch(`https://api.example.com/news/${id}`);
+  if (!res.ok) notFound();
+
+  const data = await res.json();
+  if (!data) notFound();
 
   return (
     <div>
