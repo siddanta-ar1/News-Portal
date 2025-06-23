@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase'; 
-import { useUser } from '@supabase/auth-helpers-react'; 
-import { useRouter } from 'next/navigation'; 
+import { supabase } from '../lib/supabase'; // Your Supabase client
+import { useUser, } from '@supabase/auth-helpers-react'; // Updated: useUser instead of useSession
+import { useRouter } from 'next/navigation'; // Updated: use 'next/navigation' for App Router or 'next/router' for Pages Router
 
 interface NewsArticle {
   title: string;
@@ -11,30 +11,36 @@ interface NewsArticle {
   pubDate: string;
   source_id: string;
   source?: 'api' | 'user';
-  visibility?: 'public' | 'private'; 
+  visibility?: 'public' | 'private'; // For Feature 2
 }
 
 export default function NewsSearch() {
-  const user = useUser(); 
-  const router = useRouter();
+  const user = useUser(); // Get the authenticated user object directly
+  const router = useRouter(); // Use useRouter from 'next/navigation' for App Router, or 'next/router' for Pages Router
+
   const [country, setCountry] = useState('us');
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false); 
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false); // State to control login prompt UI
 
-
+  // Effect to check user authentication status
   useEffect(() => {
-    if (!user) { 
+    if (!user) { // If there's no authenticated user
       setShowLoginPrompt(true);
-      setNews([]); 
+      setNews([]); // Clear news if user is not logged in
     } else {
-      setShowLoginPrompt(false); 
+      setShowLoginPrompt(false); // Hide login prompt if logged in
+      setError(null); // Clear any previous error messages related to login
+      // Optionally: if you want to auto-fetch default news (e.g., for 'us') when a user logs in
+      // if (news.length === 0 && !loading && !error && country) {
+      //   fetchNews(country);
+      // }
     }
-  }, [user]); 
+  }, [user]); // Depend on the 'user' object
 
   async function fetchNews(countryCode: string) {
-    if (!user) { 
+    if (!user) { // Double-check authentication before fetching
       setError('Please log in to fetch news.');
       setShowLoginPrompt(true);
       setNews([]);
@@ -43,10 +49,10 @@ export default function NewsSearch() {
 
     setLoading(true);
     setError(null);
-    setNews([]);
+    setNews([]); // Clear old news while loading
 
     try {
-      
+      // --- Fetch from external API ---
       const res = await fetch(
         `https://newsdata.io/api/1/latest?apikey=pub_b5c84fc50e2e44fda7fb187b40740cd9&q=world news&country=${countryCode}`
       );
@@ -70,15 +76,8 @@ export default function NewsSearch() {
         source: 'api',
       })) || [];
 
-      
-      interface UserNewsRow {
-        title: string;
-        link?: string;
-        created_at: string;
-        author_email?: string;
-        visibility?: 'public' | 'private';
-      }
-
+      // --- Fetch from Supabase user_news table ---
+      // This call will be automatically filtered by RLS based on the authenticated 'user'
       const { data: dbNews, error: dbError } = await supabase
         .from('user_news')
         .select('*')
@@ -87,23 +86,32 @@ export default function NewsSearch() {
 
       if (dbError) {
           console.error('Supabase fetch error:', dbError);
-          if (dbError.code === '42501') { 
+          if (dbError.code === '42501') { // PostgreSQL permission denied error code
+              // This should ideally not happen if 'user' is checked above, but good for debugging RLS
               throw new Error("Access denied to user news. Please ensure you are logged in and have permissions.");
           } else {
               throw new Error(`Failed to fetch user-submitted news: ${dbError.message}`);
           }
       }
 
-      const userNews: NewsArticle[] = (dbNews as UserNewsRow[] | null)?.map((item) => ({
+      interface UserNewsDbItem {
+        title: string;
+        link?: string;
+        created_at: string;
+        author_email?: string;
+        visibility?: 'public' | 'private';
+      }
+
+      const userNews: NewsArticle[] = dbNews?.map((item: UserNewsDbItem) => ({
         title: item.title,
         link: item.link || '#',
         pubDate: item.created_at,
         source_id: item.author_email || 'User Submission',
         source: 'user',
-        visibility: item.visibility 
+        visibility: item.visibility // For Feature 2
       })) || [];
 
-
+      // Combine and display results
       const combinedNews = [...userNews, ...apiResults];
       setNews(combinedNews);
 
@@ -124,9 +132,9 @@ export default function NewsSearch() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!user) { 
+    if (!user) { // Re-check authentication before allowing submission
       alert('Please log in to search for news.');
-      router.push('/login'); 
+      router.push('/login'); // Redirect
       return;
     }
     if (country.trim()) {
@@ -137,7 +145,7 @@ export default function NewsSearch() {
   }
 
   async function saveToSupabase(article: NewsArticle) {
-    if (!user) { 
+    if (!user) { // Ensure user is logged in before saving
       alert('Please log in to save news.');
       return;
     }
@@ -147,7 +155,7 @@ export default function NewsSearch() {
       link: article.link,
       pubDate: article.pubDate,
       source_id: article.source_id,
-      user_id: user.id, 
+      user_id: user.id, // Explicitly set user_id from the authenticated user
     });
 
     if (insertError) {
@@ -160,29 +168,12 @@ export default function NewsSearch() {
   // --- Conditional Rendering ---
   if (showLoginPrompt) {
     return (
-      <section className="bg-white dark:bg-gray-900 shadow-md rounded-xl p-8 mb-6 flex flex-col items-center justify-center min-h-[350px]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="bg-blue-100 dark:bg-blue-900 rounded-full p-4 mb-2">
-        <svg
-          className="w-10 h-10 text-blue-600 dark:text-blue-300"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 11c1.657 0 3-1.343 3-3S13.657 5 12 5s-3 1.343-3 3 1.343 3 3 3zm0 2c-2.67 0-8 1.337-8 4v2a1 1 0 001 1h14a1 1 0 001-1v-2c0-2.663-5.33-4-8-4z"
-          />
-        </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Access Restricted</h2>
-          <p className="text-gray-600 dark:text-gray-400 text-center max-w-xs">
-        Please log in to search and view news articles.
-          </p>
-         
-        </div>
+      <section className="bg-white dark:bg-gray-900 shadow-md rounded-xl p-6 mb-6 space-y-6 flex flex-col items-center justify-center min-h-[400px]">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Access Restricted</h2>
+        <p className="text-gray-600 dark:text-gray-400 text-center">
+          Please log in to search and view news articles.
+        </p>
+      
       </section>
     );
   }
