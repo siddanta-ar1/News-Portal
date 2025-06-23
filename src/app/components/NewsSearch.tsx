@@ -1,20 +1,19 @@
-// NewsSearch.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { useRouter } from 'next/navigation';
+import { supabase } from '../lib/supabase'; // Your Supabase client
 import { useUser } from '@supabase/auth-helpers-react';
+import { useRouter } from 'next/navigation'; // Using next/navigation for App Router
 
 interface NewsArticle {
-  id?: string;
-  user_id?: string;
+  id?: string; // Crucial for identifying user-submitted news and linking to invite page
+  user_id?: string; // Author's user ID, also crucial for invite button logic
   title: string;
   link: string;
   pubDate: string;
   source_id: string;
   source?: 'api' | 'user';
-  visibility?: 'public' | 'private';
+  visibility?: 'public' | 'private'; // For Feature 2
 }
 
 export default function NewsSearch() {
@@ -25,40 +24,26 @@ export default function NewsSearch() {
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Separate states for clarity:
-  const [isAuthLoaded, setIsAuthLoaded] = useState(false); // New: True once user state is determined (null or object)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   useEffect(() => {
-    // This effect runs whenever the 'user' object changes (null -> object, or object -> null)
-    // or on initial client-side render when 'user' is likely null initially.
-    if (user === undefined) {
-      // 'user' is undefined means auth-helpers hasn't even started fetching or is in a transient state
-      // We wait for it to be explicitly null or an object.
-      return;
-    }
-
-    setIsAuthLoaded(true); // Now we know auth state (user is either null or a user object)
-
     if (!user) {
       setShowLoginPrompt(true);
-      setNews([]); // Clear news if user logs out
+      setNews([]); // Clear news if user is not logged in
     } else {
       setShowLoginPrompt(false);
-      setError(null);
-      // Optional: Auto-fetch news for the default country when user logs in
-      // This helps pre-populate the search results if you want that behavior
-      // and ensures content appears after successful login without manual search.
+      setError(null); // Clear any previous error messages
+      // Optional: auto-fetch default news (e.g., for 'us') when a user logs in
       // if (news.length === 0 && !loading && !error && country) {
-      //   fetchNews(country); // Removed this for now to ensure explicit search only
+      //   fetchNews(country);
       // }
     }
-  }, [user]); // Depend on the 'user' object
+  }, [user]);
 
   async function fetchNews(countryCode: string) {
-    if (!user) { // Double-check authentication before fetching
+    if (!user) {
       setError('Please log in to fetch news.');
-      // No need to setShowLoginPrompt(true) here, useEffect already handles it
+      setShowLoginPrompt(true);
       setNews([]);
       return;
     }
@@ -82,6 +67,7 @@ export default function NewsSearch() {
         link: string;
         pubDate: string;
         source_id: string;
+        // Add other properties from NewsData.io if you use them, like description, image_url etc.
       }
 
       const apiResults: NewsArticle[] = apiData.results?.map((item: ApiNewsItem) => ({
@@ -93,6 +79,8 @@ export default function NewsSearch() {
       })) || [];
 
       // --- Fetch from Supabase user_news table ---
+      // This call will be automatically filtered by RLS based on the authenticated 'user'
+      // Ensure 'id' and 'user_id' (author's ID) are included in the select.
       const { data: dbNews, error: dbError } = await supabase
         .from('user_news')
         .select('id, title, description, link, created_at, author_email, visibility, user_id, country_code')
@@ -108,24 +96,25 @@ export default function NewsSearch() {
         }
       }
 
+      // Updated interface to match fetched data including id and user_id
       interface UserNewsDbItem {
-        id: string;
-        user_id: string;
+        id: string; // The UUID from your user_news table
+        user_id: string; // The author's UUID
         title: string;
         link?: string;
         created_at: string;
         author_email?: string;
         visibility?: 'public' | 'private';
-        description?: string;
-        country_code?: string;
+        description?: string; // Include if you fetch it
+        country_code?: string; // Include if you fetch it
       }
 
       const userNews: NewsArticle[] = (dbNews as UserNewsDbItem[] | null)?.map((item) => ({
-        id: item.id,
-        user_id: item.user_id,
+        id: item.id, // --- IMPORTANT: Map the ID ---
+        user_id: item.user_id, // --- IMPORTANT: Map the user_id (author's ID) ---
         title: item.title,
         link: item.link || '#',
-        pubDate: item.created_at,
+        pubDate: item.created_at, // Using created_at for pubDate for user news
         source_id: item.author_email || 'User Submission',
         source: 'user',
         visibility: item.visibility,
@@ -151,7 +140,7 @@ export default function NewsSearch() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!user) { // Re-check authentication before allowing submission
+    if (!user) {
       alert('Please log in to search for news.');
       router.push('/login');
       return;
@@ -164,11 +153,11 @@ export default function NewsSearch() {
   }
 
   async function saveToSupabase(article: NewsArticle) {
-    if (!user) { // Ensure user is logged in before saving
+    if (!user) {
       alert('Please log in to save news.');
       return;
     }
-    
+
     const { error: insertError } = await supabase.from('saved_news').insert({
       title: article.title,
       link: article.link,
@@ -182,17 +171,6 @@ export default function NewsSearch() {
     } else {
       alert('Saved to favorites!');
     }
-  }
-
-  // --- Conditional Rendering for Initial Authentication Loading State ---
-  if (!isAuthLoaded) {
-    // Show a loading spinner or message while authentication status is being determined
-    return (
-      <section className="bg-white dark:bg-gray-900 shadow-md rounded-xl p-8 mb-6 flex flex-col items-center justify-center min-h-[350px]">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 animate-pulse">Loading authentication status...</h2>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">Please wait.</p>
-      </section>
-    );
   }
 
   // --- Conditional Rendering for Login Prompt ---
@@ -219,7 +197,7 @@ export default function NewsSearch() {
           <p className="text-gray-600 dark:text-gray-400 text-center max-w-xs">
             Please log in to search and view news articles.
           </p>
-
+         
         </div>
       </section>
     );
