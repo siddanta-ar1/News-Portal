@@ -38,6 +38,7 @@ const countries = [
 export default function SubmitNewsPage() {
   const [title, setTitle] = useState('');
   const [link, setLink] = useState('');
+    const [imageUrl, setImageUrl] = useState('');
   const [description, setDescription] = useState('');
   const [countryCode, setCountryCode] = useState('');
   const router = useRouter();
@@ -55,6 +56,8 @@ export default function SubmitNewsPage() {
       link,
       description,
       country_code: countryCode,
+      visibility,
+      image_url: imageUrl || null,
     });
 
     if (error) {
@@ -65,6 +68,8 @@ export default function SubmitNewsPage() {
       router.push('/');
     }
   };
+  const [visibility, setVisibility] = useState<'public' | 'private'>('public');
+
 
   return (
     <main className="max-w-xl mx-auto mt-10 p-6 bg-white dark:bg-gray-900 rounded-lg shadow space-y-6">
@@ -131,6 +136,35 @@ export default function SubmitNewsPage() {
         ))}
       </select>
     </div>
+
+    <div>
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+    Visibility
+  </label>
+  <select
+    value={visibility}
+    onChange={(e) => setVisibility(e.target.value as 'public' | 'private')}
+    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+  >
+    <option value="public">🌐 Public (anyone can view)</option>
+    <option value="private">🔒 Private (only invited users)</option>
+  </select>
+</div>
+
+         {/* Image URL - optional */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Image URL (optional)
+          </label>
+          <input
+            type="url"
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            placeholder="Optional image URL"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+
 
     <button
       type="submit"

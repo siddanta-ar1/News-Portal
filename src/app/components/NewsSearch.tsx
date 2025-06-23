@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface NewsArticle {
   title: string;
@@ -10,15 +11,15 @@ interface NewsArticle {
   pubDate: string;
   source_id: string;
   source: 'api' | 'user';
+  visibility?: 'public' | 'private';
+  image_url?: string;
 }
 
 export default function NewsSearch() {
-  const [country, setCountry] = useState('us'); // default US news
+  const [country, setCountry] = useState('us');
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // New: track user
   const [user, setUser] = useState<null | { email?: string }>(null);
 
   useEffect(() => {
@@ -40,52 +41,81 @@ export default function NewsSearch() {
     setError(null);
 
     try {
-      const res = await fetch(
-        `https://newsdata.io/api/1/latest?apikey=pub_b5c84fc50e2e44fda7fb187b40740cd9&q=world news&country=${countryCode}`
-      );
-      const data = await res.json();
+      const { data: session } = await supabase.auth.getUser();
+      const userEmail = session?.user?.email;
 
-      type ApiResultItem = {
-        title: string;
-        link: string;
-        pubDate: string;
-        source_id: string;
-      };
-
-      const apiResults: NewsArticle[] = data.results?.map((item: ApiResultItem) => ({
-        ...item,
-        source: 'api',
-      })) || [];
-
-      interface UserNewsRow {
-        title: string;
-        link?: string;
-        created_at: string;
-        author_email?: string;
-      }
-
-      const { data: dbNews } = await supabase
+      const { data: dbNews, error: dbError } = await supabase
         .from('user_news')
         .select('*')
         .eq('country_code', countryCode)
         .order('created_at', { ascending: false });
 
-      const userNews: NewsArticle[] = (dbNews as UserNewsRow[] | null)?.map((item: UserNewsRow) => ({
+      if (dbError) throw dbError;
+
+      const { data: inviteData } = await supabase
+        .from('invites')
+        .select('inviter_id')
+        .eq('invitee_email', userEmail);
+
+      const inviterIds = inviteData?.map(i => i.inviter_id) || [];
+
+      interface UserNews {
+        title: string;
+        link?: string;
+        created_at: string;
+        author_email?: string;
+        user_id: string;
+        visibility: 'public' | 'private';
+        country_code: string;
+        image_url?: string;
+      }
+
+      const filtered = (dbNews || []).filter((news: UserNews) => {
+        return (
+          news.visibility === 'public' ||
+          (news.visibility === 'private' && inviterIds.includes(news.user_id))
+        );
+      });
+
+      const userNews: NewsArticle[] = filtered.map((item) => ({
         title: item.title,
         link: item.link || '#',
         pubDate: item.created_at,
         source_id: item.author_email || 'User Submission',
         source: 'user',
+        visibility: item.visibility,
+        image_url: item.image_url || undefined,
+      }));
+
+      const res = await fetch(
+        `https://newsdata.io/api/1/latest?apikey=pub_b5c84fc50e2e44fda7fb187b40740cd9&q=world news&country=${countryCode}`
+      );
+      const data = await res.json();
+
+      interface ApiNewsItem {
+        title: string;
+        link: string;
+        pubDate: string;
+        source_id: string;
+        image_url?: string;
+      }
+
+      const apiResults: NewsArticle[] = data.results?.map((item: ApiNewsItem) => ({
+        title: item.title,
+        link: item.link,
+        pubDate: item.pubDate,
+        source_id: item.source_id,
+        source: 'api',
+        image_url: item.image_url,
       })) || [];
 
-      const combinedNews = [...userNews, ...apiResults];
-      setNews(combinedNews);
+      setNews([...userNews, ...apiResults]);
 
-      if (combinedNews.length === 0) {
+      if (userNews.length === 0 && apiResults.length === 0) {
         setError('No news found for this country.');
       }
     } catch (err) {
-      setError('Failed to fetch news: ' + (err as Error).message);
+      setError('Error fetching news: ' + (err as Error).message);
       setNews([]);
     }
 
@@ -180,6 +210,21 @@ export default function NewsSearch() {
             key={i}
             className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow bg-gray-50 dark:bg-gray-800"
           >
+            {article.image_url && (
+              <div className="relative w-full h-52 mb-3 rounded overflow-hidden">
+                <Image
+                  src={article.image_url}
+                  alt="News Image"
+                  width={700}
+                  height={300}
+                  className="object-cover rounded"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/fallback.jpg';
+                  }}
+                />
+              </div>
+            )}
+
             <Link
               href={article.link}
               target="_blank"
@@ -188,17 +233,56 @@ export default function NewsSearch() {
             >
               {article.title}
             </Link>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {article.source_id} | {new Date(article.pubDate).toLocaleDateString()}
-            </p>
+
+            <div className="flex justify-between items-center mt-2 text-sm text-gray-600 dark:text-gray-400">
+              <span>{article.source_id}</span>
+              <span>{new Date(article.pubDate).toLocaleDateString()}</span>
+            </div>
+
+            {article.source === 'user' && (
+              <span
+                className={`inline-flex items-center gap-1 mt-2 px-2 py-1 text-xs rounded-full font-semibold shadow-sm
+                  ${article.visibility === 'private'
+                    ? 'bg-red-100 text-red-800 border border-red-200'
+                    : 'bg-green-100 text-green-800 border border-green-200'
+                  }`}
+              >
+                {article.visibility === 'private' ? (
+                  <>
+                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 17a2 2 0 002-2v-2a2 2 0 00-2-2 2 2 0 00-2 2v2a2 2 0 002 2z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 8V7a5 5 0 00-10 0v1" />
+                      <rect width="20" height="12" x="2" y="8" rx="2" />
+                    </svg>
+                    Private
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2 12h20M12 2v20" />
+                    </svg>
+                    Public
+                  </>
+                )}
+              </span>
+            )}
+
             <button
               onClick={() => saveToSupabase(article)}
               disabled={!user}
-              className={`mt-3 inline-block px-4 py-2 text-sm font-medium rounded-md ${
-                user ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'
-              } text-white shadow transition-colors`}
+              className={`mt-4 flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg
+                transition-all duration-150 shadow focus:outline-none focus:ring-2 focus:ring-offset-2
+                ${user
+                  ? 'bg-gradient-to-r from-green-500 to-green-700 hover:from-green-600 hover:to-green-800 text-white focus:ring-green-400'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              title={user ? 'Save this article to your favorites' : 'Log in to save articles'}
             >
-              ➕ Save to Favorites
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Save to Favorites
             </button>
           </li>
         ))}
