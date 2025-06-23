@@ -7,7 +7,7 @@ export default function Home() {
     👋 Welcome to the News Portal
   </h1>
   <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
-    Search for global news by country, save your favorites, and stay informed with a clean and fast experience.
+    Search for global news by country code, save your favorites, and stay informed with a clean and fast experience.
     
   </p>
   <NewsSearch />
