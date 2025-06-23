@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase'; 
 import { useUser } from '@supabase/auth-helpers-react'; 
 import { useRouter } from 'next/navigation'; 
-import AuthButtons from './AuthButtons';
 
 interface NewsArticle {
   title: string;
@@ -17,25 +16,22 @@ interface NewsArticle {
 
 export default function NewsSearch() {
   const user = useUser(); 
-  const router = useRouter(); 
-
+  const router = useRouter();
   const [country, setCountry] = useState('us');
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false); 
 
-  
+
   useEffect(() => {
     if (!user) { 
       setShowLoginPrompt(true);
       setNews([]); 
     } else {
       setShowLoginPrompt(false); 
-      setError(null); 
-      
     }
-  }, [user]); // Depend on the 'user' object
+  }, [user]); 
 
   async function fetchNews(countryCode: string) {
     if (!user) { 
@@ -47,10 +43,10 @@ export default function NewsSearch() {
 
     setLoading(true);
     setError(null);
-    setNews([]); 
+    setNews([]);
 
     try {
-     
+      
       const res = await fetch(
         `https://newsdata.io/api/1/latest?apikey=pub_b5c84fc50e2e44fda7fb187b40740cd9&q=world news&country=${countryCode}`
       );
@@ -107,7 +103,7 @@ export default function NewsSearch() {
         visibility: item.visibility 
       })) || [];
 
-      
+
       const combinedNews = [...userNews, ...apiResults];
       setNews(combinedNews);
 
@@ -131,6 +127,7 @@ export default function NewsSearch() {
     if (!user) { 
       alert('Please log in to search for news.');
       router.push('/login'); 
+      return;
     }
     if (country.trim()) {
       fetchNews(country.trim().toLowerCase());
@@ -160,14 +157,14 @@ export default function NewsSearch() {
     }
   }
 
- 
+  // --- Conditional Rendering ---
   if (showLoginPrompt) {
     return (
-      <section className="bg-white dark:bg-gray-900 shadow-md rounded-xl p-6 mb-6 flex flex-col items-center justify-center min-h-[250px] max-w-md mx-auto">
-        <div className="flex flex-col items-center gap-3">
-          <div className="bg-blue-100 dark:bg-blue-900 rounded-full p-3 mb-2">
+      <section className="bg-white dark:bg-gray-900 shadow-md rounded-xl p-8 mb-6 flex flex-col items-center justify-center min-h-[350px]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="bg-blue-100 dark:bg-blue-900 rounded-full p-4 mb-2">
         <svg
-          className="w-8 h-8 text-blue-600 dark:text-blue-300"
+          className="w-10 h-10 text-blue-600 dark:text-blue-300"
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
@@ -180,13 +177,11 @@ export default function NewsSearch() {
           />
         </svg>
           </div>
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Access Restricted</h2>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Access Restricted</h2>
           <p className="text-gray-600 dark:text-gray-400 text-center max-w-xs">
         Please log in to search and view news articles.
           </p>
-          <div className="mt-2">
-        <AuthButtons />
-          </div>
+         
         </div>
       </section>
     );

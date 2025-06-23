@@ -1,5 +1,6 @@
 import NewsSearch from "./components/NewsSearch";
 
+
 export default function Home() {
   return (
    <section className="bg-white dark:bg-gray-900 shadow-md rounded-xl p-6 mb-6 space-y-4">
@@ -7,10 +8,11 @@ export default function Home() {
     👋 Welcome to the News Portal
   </h1>
   <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
-    Search for global news by country code, save your favorites, and stay informed with a clean and fast experience.
-    
+    Search Global News by Country Code (e.g. <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">us</code>, <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">np</code>, <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">in</code>).
+    <br />
+    <NewsSearch/>
   </p>
-  <NewsSearch />
+  
 </section>
 
   );
