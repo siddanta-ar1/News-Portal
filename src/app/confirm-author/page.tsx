@@ -1,8 +1,12 @@
-'use client';
+// app/confirm-author/page.js
+ 'use client'; // Keep this line as the component uses client-side hooks
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/app/lib/supabase';
+
+// Add this export to disable static rendering (prerendering) for this page
+export const dynamic = 'force-dynamic';
 
 export default function ConfirmAuthorPage() {
   const searchParams = useSearchParams();
