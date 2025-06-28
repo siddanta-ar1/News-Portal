@@ -1,67 +1,77 @@
-import Link from 'next/link'
-import React from 'react'
-import AuthButtons from './AuthButtons'
+'use client';
+
+import Link from 'next/link';
+import { useState } from 'react';
+import AuthButtons from './AuthButtons';
+import { Menu, X } from 'lucide-react';
 
 const Navbar = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const navLinks = [
+    { href: '/', label: '🏠 Home' },
+    { href: '/submit-news', label: '📝 Submit News' },
+    { href: '/country-guide', label: '🌍 Country Guide' },
+    { href: '/favorites', label: '⭐ My Favorites' },
+    { href: '/my-invites', label: '👥 My Invites' },
+    { href: '/invite-user', label: '📩 Invite User' },
+    { href: '/check-author', label: '📬 Confirm Author' },
+    { href: '/author-status', label: '📊 Author Status' },
+  ];
+
+  const baseButtonClasses = 'text-sm font-medium text-center text-blue-600 dark:text-white bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 px-4 py-2 rounded-md transition-all w-full md:w-auto min-w-[140px]';
+
   return (
-      <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4">
-    {/* Site Title */}
-    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">📰 News Portal</h1>
+    <nav className="bg-white dark:bg-gray-900 shadow-md sticky top-0 z-50">
+      <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+        <h1 className="text-2xl font-bold tracking-tight text-blue-700 dark:text-white">
+          📰 News Portal
+        </h1>
 
-    {/* Button Group */}
-    <div className="flex flex-wrap gap-2 sm:gap-4 items-center">
-      {/* Home Button */}
-      <Link
-        href="/"
-        className="bg-white text-blue-600 dark:bg-gray-700 dark:text-white px-4 py-2 rounded-md shadow hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-sm sm:text-base"
-      >
-        🏠 Home
-      </Link>
+        {/* Desktop Menu */}
+        <div className="hidden md:flex flex-wrap gap-2 items-center">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={baseButtonClasses}
+            >
+              {link.label}
+            </Link>
+          ))}
+          <AuthButtons />
+        </div>
 
-      {/* Submit News Button */}
-      <Link
-        href="/submit-news"
-        className="bg-white text-blue-600 dark:bg-gray-700 dark:text-white px-4 py-2 rounded-md shadow hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-sm sm:text-base"
-      >
-        📝 Submit News
-      </Link>
+        {/* Mobile Hamburger */}
+        <button
+          className="md:hidden text-blue-600 dark:text-white"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Toggle navigation"
+        >
+          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </div>
 
-      {/* Country Guide Button */}
-      <Link
-        href="/country-guide"
-        className="bg-white text-blue-600 dark:bg-gray-700 dark:text-white px-4 py-2 rounded-md shadow hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-sm sm:text-base"
-      >
-        🌍 Country Guide
-      </Link>
-      {/* Favorites Button */}
-      <Link
-        href="/favorites"
-        className="bg-white text-blue-600 dark:bg-gray-700 dark:text-white px-4 py-2 rounded-md shadow hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-sm sm:text-base"
-      >
-        ⭐ My Favorites
-      </Link>
-        {/* My Invites Button */}
-        <Link
-        href="/my-invites"
-       className="bg-white text-blue-600 dark:bg-gray-700 dark:text-white px-4 py-2 rounded-md shadow hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-sm sm:text-base"
-      >
-        👥 My Invites
-      </Link>
-      
-        {/* Invite new user Button */}
-        <Link
-        href="/invite-user"
-        className="bg-white text-blue-600 dark:bg-gray-700 dark:text-white px
-        4 py-2 rounded-md shadow hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-sm sm:text-base">
-        📩 Invite User
-        </Link>
+      {/* Mobile Menu */}
+      {isOpen && (
+        <div className="md:hidden bg-white dark:bg-gray-800 px-4 pb-4 space-y-2">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setIsOpen(false)}
+              className={baseButtonClasses}
+            >
+              {link.label}
+            </Link>
+          ))}
+          <div className="pt-2">
+            <AuthButtons />
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+};
 
-
-      {/* Auth Buttons */}
-      <AuthButtons />
-    </div>
-  </div>
-  )
-}
-
-export default Navbar
+export default Navbar;

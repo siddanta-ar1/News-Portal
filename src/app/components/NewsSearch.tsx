@@ -144,6 +144,7 @@ export default function NewsSearch() {
       link: article.link,
       pubDate: article.pubDate,
       source_id: article.source_id,
+      image_url: article.image_url ?? null,
     });
 
     if (error) {

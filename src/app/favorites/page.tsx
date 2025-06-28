@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import Link from 'next/link';
+import Image from 'next/image';
 
 
 interface SavedNews {
@@ -10,6 +12,7 @@ interface SavedNews {
   link: string;
   pubDate: string;
   source_id: string;
+  image_url?: string;
 }
 
 export default function FavoritesPage() {
@@ -94,31 +97,41 @@ if (!userId) {
     </p>
   ) : (
     <ul className="space-y-4">
-      {news.map((article) => (
-        <li
-          key={article.id}
-          className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800 hover:shadow-md transition-shadow"
-        >
-          <a
-            href={article.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block text-lg font-semibold text-blue-700 dark:text-blue-400 hover:underline"
-          >
-            {article.title}
-          </a>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            {article.source_id} | {new Date(article.pubDate).toLocaleDateString()}
-          </p>
-          <button
-            onClick={() => handleDelete(article.id)}
-            className="mt-3 inline-block bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm shadow transition-colors"
-          >
-            🗑 Delete
-          </button>
-        </li>
-      ))}
-    </ul>
+  {news.map((article) => (
+    <li
+      key={article.id}
+      className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800 hover:shadow-md transition-shadow"
+    >
+      {article.image_url && (
+        <Image
+          src={article.image_url}
+           alt="News Image"
+                  width={700}
+                  height={300}
+                  className="object-cover rounded"
+        />
+      )}
+      <Link
+        href={article.link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block text-lg font-semibold text-blue-700 dark:text-blue-400 hover:underline"
+      >
+        {article.title}
+      </Link>
+      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+        {article.source_id} | {new Date(article.pubDate).toLocaleDateString()}
+      </p>
+      <button
+        onClick={() => handleDelete(article.id)}
+        className="mt-3 inline-block bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm shadow transition-colors"
+      >
+        🗑 Delete
+      </button>
+    </li>
+  ))}
+</ul>
+
   )}
 </section>
 

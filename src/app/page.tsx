@@ -14,6 +14,7 @@ export default function Home() {
         <NewsSearch/> {/* NewsSearch component itself starts with a <section> */}
       </div>
       {/* --- End of change --- */}
+      
     </section>
   );
 }
