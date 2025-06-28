@@ -11,8 +11,6 @@
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
-    "@supabase/auth-helpers-nextjs": "^0.10.0",
-    "@supabase/auth-helpers-react": "^0.5.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.50.0",
     "@tailwindcss/postcss": "^4.1.10",
@@ -26,6 +24,8 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/estree": "^1.0.8",
+    "@types/json-schema": "^7.0.15",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
