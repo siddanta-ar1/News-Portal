@@ -10,12 +10,13 @@ const Navbar = () => {
 
   const navLinks = [
     { href: '/', label: '🏠 Home' },
-    { href: '/submit-news', label: '📝 Submit News' },
-    { href: '/country-guide', label: '🌍 Country Guide' },
+    { href: '/submit-news', label: ' Submit News' },
+    { href: '/country-guide', label: ' Country Guide' },
     { href: '/favorites', label: '⭐ My Favorites' },
     { href: '/my-invites', label: '👥 My Invites' },
-    { href: '/invite-user', label: '📩 Invite User' },
-    { href: '/check-author', label: '📬 Confirm Author' },
+    { href: '/invite-user', label: ' Invite User' },
+    { href: '/check-author', label: ' Confirm Author' },
+    { href:'/author-status', label: ' Author Status'}
   ];
 
   return (
